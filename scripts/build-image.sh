@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eE 
+set -eE
 trap 'echo Error: in $0 on line $LINENO' ERR
 
 cleanup_loopdev() {
@@ -32,7 +32,7 @@ wait_loopdev() {
     ls -l "${loop}" &> /dev/null
 }
 
-if [ "$(id -u)" -ne 0 ]; then 
+if [ "$(id -u)" -ne 0 ]; then
     echo "Please run as root"
     exit 1
 fi
@@ -210,4 +210,28 @@ trap '' EXIT
 echo -e "\nCompressing $(basename "${img}.xz")\n"
 xz -6 --force --keep --quiet --threads=0 "${img}"
 rm -f "${img}"
-cd ../images && sha256sum "$(basename "${img}.xz")" > "$(basename "${img}.xz.sha256")"
+
+echo "check whether to process img.xz"
+
+COMPRESSED_FILE="${img}.xz"
+FILE_SIZE=$(stat -c%s "${COMPRESSED_FILE}")
+MAX_SIZE=$((2 * 1024 * 1024 * 1024))
+OUTPUT_DIR="../images_parts"
+
+mkdir $OUTPUT_DIR
+if [ ${FILE_SIZE} -gt ${MAX_SIZE} ]; then
+    echo "img.xz is large,begin to split img to parts"
+    SPLIT_SIZE=2000M
+    split -b $SPLIT_SIZE --numeric-suffixes=1 -d "${COMPRESSED_FILE}" "${OUTPUT_DIR}/$(basename "${COMPRESSED_FILE}").part"
+    cd $OUTPUT_DIR
+    for part in "$(basename "${COMPRESSED_FILE}").part"*; do
+        sha256sum "$part" > "$part.sha256"
+    done
+else
+    echo "no need to process img.xz,calculate the checksum."
+    cd ../images && sha256sum "$(basename "${img}.xz")" > "$(basename "${img}.xz.sha256")"
+    cp "$(basename "${img}.xz")" "$OUTPUT_DIR"
+    cp "$(basename "${img}.xz.sha256")"  "$OUTPUT_DIR"
+fi
+
+

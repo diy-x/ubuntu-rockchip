@@ -16,6 +16,17 @@ if [[ -z ${BOARD} ]]; then
     exit 1
 fi
 
+# load post scripts
+for opt in ../config/postscripts/*.sh; do
+    # Check if the file exists and is readable
+    if [ -r "${opt}" ]; then
+        # Load the script
+        # shellcheck source=/dev/null
+        source "${opt}"
+    else
+        echo "Cannot read file ${opt}"
+    fi
+done
 # shellcheck source=/dev/null
 source "../config/boards/${BOARD}.sh"
 
@@ -134,15 +145,21 @@ setup_mountpoint $chroot_dir
 # Update packages
 chroot $chroot_dir apt-get update
 chroot $chroot_dir apt-get -y upgrade
-    
+
 # Run config hook to handle board specific changes
 if [[ $(type -t config_image_hook__"${BOARD}") == function ]]; then
-    config_image_hook__"${BOARD}" "${chroot_dir}" "${overlay_dir}" "${SUITE}"
-fi 
+    config_image_hook__"${BOARD}" "${chroot_dir}" "${overlay_dir}"
+fi
 
 # Download and install U-Boot
 if [[ ${LAUNCHPAD} == "Y" ]]; then
-    chroot ${chroot_dir} apt-get -y install "u-boot-${BOARD}"
+    # handle board name
+    if [[ ${BOARD} == *"with"* ]]; then
+        uboot="${BOARD%%-with-*}"
+        chroot ${chroot_dir} apt-get -y install "u-boot-${uboot}"
+    else
+        chroot ${chroot_dir} apt-get -y install "u-boot-${BOARD}"
+    fi
 else
     cp "${uboot_package}" ${chroot_dir}/tmp/
     chroot ${chroot_dir} dpkg -i "/tmp/${uboot_package}"

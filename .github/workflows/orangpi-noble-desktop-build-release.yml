@@ -1,0 +1,238 @@
+name: Release orangepi 5 noble desktop
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+
+env:
+  ROOTFS_ID: 23
+
+permissions:
+  contents: write
+run-name: Release
+
+jobs:
+  prepare_release:
+    name: Create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create empty release
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target_commitish: main
+          draft: true
+    outputs:
+      release_id: ${{ steps.release.outputs.id }}
+
+  rootfs:
+    runs-on: ubuntu-latest
+    needs: [prepare_release]
+    name: Build rootfs
+    strategy:
+      matrix:
+        flavor:
+          - desktop
+        suite:
+          - noble
+
+    steps:
+      - name: Cache rootfs
+        id: cache-rootfs
+        uses: actions/cache@v4
+        with:
+          path: ./build/ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64.rootfs.tar.xz
+          key: rootfs-${{ matrix.suite }}-${{ matrix.flavor }}-${{ env.ROOTFS_ID }}
+          restore-keys: rootfs-${{ matrix.suite }}-${{ matrix.flavor }}-
+
+      - name: Get more disk space
+        if: steps.cache-rootfs.outputs.cache-hit != 'true'
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout code
+        if: steps.cache-rootfs.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+
+      - name: Checkout LFS
+        if: steps.cache-rootfs.outputs.cache-hit != 'true'
+        run: git lfs fetch && git lfs checkout
+
+      - name: Install dependencies
+        if: steps.cache-rootfs.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && apt-get purge needrestart -y && sudo apt-get upgrade -y
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
+          qemu-user-static qemu-system-arm  u-boot-tools binfmt-support \
+          debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
+          udev dosfstools uuid-runtime git-lfs device-tree-compiler  python3 \
+          python-is-python3 fdisk bc debhelper python3-pyelftools python3-setuptools \
+          python3-pkg-resources swig libfdt-dev libpython3-dev dctrl-tools
+
+      - name: Build
+        if: steps.cache-rootfs.outputs.cache-hit != 'true'
+        run: sudo ./build.sh --board=orangepi-5 --suite=${{ matrix.suite }} --flavor=${{ matrix.flavor }} --rootfs-only --launchpad
+
+      - name: Save rootfs to cache
+        if: steps.cache-rootfs.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ./build/ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64.rootfs.tar.xz
+          key: rootfs-${{ matrix.suite }}-${{ matrix.flavor }}-${{ env.ROOTFS_ID }}
+
+  kernel:
+    runs-on: ubuntu-latest
+    name: Build kernel
+    strategy:
+      matrix:
+        suite:
+          - noble
+    steps:
+      - name: Cache kernel
+        id: cache-kernel
+        uses: actions/cache@v4
+        with:
+          path: ./build/linux-*.deb
+          key: linux-rockchip-${{ matrix.suite == 'jammy' && '5.10' || matrix.suite == 'noble' && '6.1' }}
+
+      - name: Get more disk space
+        if: steps.cache-kernel.outputs.cache-hit != 'true'
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout code
+        if: steps.cache-kernel.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+
+      - name: Checkout LFS
+        if: steps.cache-kernel.outputs.cache-hit != 'true'
+        shell: bash
+        run: git lfs fetch && git lfs checkout
+
+      - name: Install dependencies
+        if: steps.cache-kernel.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          sudo apt-get update && apt-get purge needrestart -y && sudo apt-get upgrade -y
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
+          qemu-user-static qemu-system-arm  u-boot-tools binfmt-support \
+          debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
+          udev dosfstools uuid-runtime git-lfs device-tree-compiler  python3 \
+          python-is-python3 fdisk bc debhelper python3-pyelftools python3-setuptools \
+          python3-pkg-resources swig libfdt-dev libpython3-dev
+
+      - name: Build
+        if: steps.cache-kernel.outputs.cache-hit != 'true'
+        shell: bash
+        run: sudo ./build.sh --suite=${{ matrix.suite }} --kernel-only
+
+      - name: Save kernel to cache
+        if: steps.cache-kernel.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ./build/linux-*.deb
+          key: linux-rockchip-${{ matrix.suite == 'jammy' && '5.10' || matrix.suite == 'noble' && '6.1' }}
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [rootfs, kernel, prepare_release]
+    name: Build image
+    strategy:
+      matrix:
+        board:
+          - orangepi-5-plus
+          - orangepi-5-plus-with-mongodb
+          - orangepi-5-plus-with-holomotion
+          - orangepi-5-plus-with-training-assist
+          - orangepi-5-plus-with-ultimate
+        flavor:
+          - desktop
+        suite:
+          - noble
+
+    steps:
+      - name: Get more disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Checkout LFS
+        run: git lfs fetch && git lfs checkout
+
+      - name: Restore rootfs from cache
+        id: restore-rootfs
+        uses: actions/cache@v4
+        with:
+          path: ./build/ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64.rootfs.tar.xz
+          key: rootfs-${{ matrix.suite }}-${{ matrix.flavor }}-${{ env.ROOTFS_ID }}
+          restore-keys: rootfs-${{ matrix.suite }}-${{ matrix.flavor }}-
+
+      - name: Restore kernel from cache
+        id: restore-kernels
+        uses: actions/cache@v4
+        with:
+          path: ./build/linux-*.deb
+          key: linux-rockchip-${{ matrix.suite == 'jammy' && '5.10' || matrix.suite == 'noble' && '6.1' }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get upgrade -y
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
+          qemu-user-static qemu-system-arm  u-boot-tools binfmt-support \
+          debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
+          udev dosfstools uuid-runtime git-lfs device-tree-compiler  python3 \
+          python-is-python3 fdisk bc debhelper python3-pyelftools python3-setuptools \
+          python3-pkg-resources swig libfdt-dev libpython3-dev dctrl-tools
+
+      - name: Build
+        run: sudo ./build.sh --board=${{ matrix.board }} --suite=${{ matrix.suite }} --flavor=${{ matrix.flavor }} --launchpad
+
+      # - name: Upload
+      #   if: needs.prepare_release.outputs.release_id != ''
+      #   uses: xresloader/upload-to-github-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     release_id: ${{ needs.prepare_release.outputs.release_id }}
+      #     file: images/ubuntu-*-preinstalled-*-arm64-${{ matrix.board }}.*
+      #     draft: true
+      #     overwrite: true
+
+      - name: Upload to release
+        if: needs.prepare_release.outputs.release_id != ''
+        uses: xresloader/upload-to-github-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_id: ${{ needs.prepare_release.outputs.release_id }}
+          file: images_parts/ubuntu-*-preinstalled-*-arm64-${{ matrix.board }}.*
+          draft: false
+          overwrite: true
+
+      - name: Clean cache
+        run: sync && sudo rm -rf ./images/ubuntu-*-preinstalled-*-arm64-${{ matrix.board }}.* ./images_parts/ubuntu-*-preinstalled-*-arm64-${{ matrix.board }}.*  && sync

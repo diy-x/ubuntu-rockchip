@@ -66,6 +66,7 @@ set +e
 export ARCH=arm64
 export IMAGEFORMAT=none
 export IMAGE_TARGETS=none
+export EXTRA_PPAS="jjriek/rockchip jjriek/rockchip-multimedia"
 
 # Populate the configuration directory for live build
 lb config \
@@ -83,20 +84,18 @@ lb config \
     --mirror-binary "http://ports.ubuntu.com" \
     --parent-mirror-binary "http://ports.ubuntu.com" \
     --keyring-packages ubuntu-keyring \
-    --linux-flavours "${KERNEL_FLAVOR}"
+    --linux-flavours rockchip
 
-if [ "${SUITE}" == "noble" ] || [ "${SUITE}" == "jammy" ]; then
-    # Pin rockchip package archives
-    (
-        echo "Package: *"
-        echo "Pin: release o=LP-PPA-jjriek-rockchip"
-        echo "Pin-Priority: 1001"
-        echo ""
-        echo "Package: *"
-        echo "Pin: release o=LP-PPA-jjriek-rockchip-multimedia"
-        echo "Pin-Priority: 1001"
-    ) > config/archives/extra-ppas.pref.chroot
-fi
+# Pin rockchip package archives
+(
+    echo "Package: *"
+    echo "Pin: release o=LP-PPA-jjriek-rockchip"
+    echo "Pin-Priority: 1001"
+    echo ""
+    echo "Package: *"
+    echo "Pin: release o=LP-PPA-jjriek-rockchip-multimedia"
+    echo "Pin-Priority: 1001"
+) > config/archives/extra-ppas.pref.chroot
 
 if [ "${SUITE}" == "noble" ]; then
     # Ignore custom ubiquity package (mistake i made, uploaded to wrong ppa)
@@ -120,7 +119,11 @@ fi
 ) > config/seeded-snaps
 
 # Generic packages to install
-echo "software-properties-common" > config/package-lists/my.list.chroot
+(
+    echo "rockchip-multimedia-config"
+    echo "software-properties-common"
+    echo "linux-firmware"
+) > config/package-lists/my.list.chroot
 
 if [ "${PROJECT}" == "ubuntu" ]; then
     # Specific packages to install for ubuntu desktop
@@ -129,6 +132,9 @@ if [ "${PROJECT}" == "ubuntu" ]; then
         echo "oem-config-gtk"
         echo "ubiquity-frontend-gtk"
         echo "ubiquity-slideshow-ubuntu"
+        echo "gstreamer1.0-rockchip1"
+        echo "chromium-browser"
+        echo "libv4l-rkmpp"
         echo "localechooser-data"
     ) >> config/package-lists/my.list.chroot
 else

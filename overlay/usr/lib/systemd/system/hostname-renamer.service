@@ -1,0 +1,10 @@
+[Unit]
+Description=Holomotion hostname changer
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/scripts/hostname-renamer.sh
+
+[Install]
+WantedBy=multi-user.target

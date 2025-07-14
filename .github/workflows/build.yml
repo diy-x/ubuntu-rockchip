@@ -8,15 +8,15 @@ run-name: Build
 jobs:
   rootfs:
     runs-on: ubuntu-latest
-    name: Build rootfs 
+    name: Build rootfs
     strategy:
-        matrix:
-          flavor:
-            - desktop
-            - server
-          suite:
-            - jammy
-            - noble
+      matrix:
+        flavor:
+          - desktop
+          - server
+        suite:
+          - jammy
+          - noble
     steps:
       - name: Get more disk space
         uses: jlumbroso/free-disk-space@main
@@ -40,11 +40,11 @@ jobs:
         run: |
           sudo apt-get update && apt-get purge needrestart -y && sudo apt-get upgrade -y
           sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
-          qemu-user-static qemu-system-arm qemu-efi u-boot-tools binfmt-support \
+          qemu-user-static qemu-system-arm  u-boot-tools binfmt-support \
           debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
-          udev dosfstools uuid-runtime git-lfs device-tree-compiler python2 python3 \
+          udev dosfstools uuid-runtime git-lfs device-tree-compiler  python3 \
           python-is-python3 fdisk bc debhelper python3-pyelftools python3-setuptools \
-          python3-distutils python3-pkg-resources swig libfdt-dev libpython3-dev dctrl-tools
+          python3-pkg-resources swig libfdt-dev libpython3-dev dctrl-tools
 
       - name: Build
         shell: bash
@@ -53,18 +53,18 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4.3.3
         with:
-            name: ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64-rootfs
-            path: ./build/ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64.rootfs.tar.xz
-            if-no-files-found: error
+          name: ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64-rootfs
+          path: ./build/ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64.rootfs.tar.xz
+          if-no-files-found: error
 
   kernel:
     runs-on: ubuntu-latest
-    name: Build kernel 
+    name: Build kernel
     strategy:
-        matrix:
-          suite:
-            - jammy
-            - noble
+      matrix:
+        suite:
+          - jammy
+          - noble
     steps:
       - name: Get more disk space
         uses: jlumbroso/free-disk-space@main
@@ -101,49 +101,48 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4.3.3
         with:
-            name: linux-rockchip-${{ matrix.suite == 'jammy' && '5.10' || matrix.suite == 'noble' && '6.1' }}
-            path: ./build/linux-*.deb
-            if-no-files-found: error
+          name: linux-rockchip-${{ matrix.suite == 'jammy' && '5.10' || matrix.suite == 'noble' && '6.1' }}
+          path: ./build/linux-*.deb
+          if-no-files-found: error
 
   build:
     runs-on: ubuntu-latest
     needs: [rootfs, kernel]
-    name: Build image 
+    name: Build image
 
     strategy:
       matrix:
         board:
-          - aio-3588l
-          - armsom-aim7
-          - armsom-sige5
-          - armsom-sige7
-          - armsom-w3
-          - indiedroid-nova
-          - lubancat-4
-          - mixtile-blade3
-          - mixtile-core3588e
+          - orangepi-cm5
+          - orangepi-3b
+          - orangepi-5
+          - orangepi-5b
+          - orangepi-5-plus
+          - orangepi-5-pro
+          - orangepi-5-max
+          - rock-5d
+          - rock-5c
+          - rock-5b-plus
+          - rock-5b
+          - rock-5a
+          - rock-5-itx
+          - radxa-cm5-rpi-cm4-io
+          - radxa-cm5-io
+          - radxa-nx5-io
+          - radxa-zero3
           - nanopc-t6
           - nanopi-r6c
           - nanopi-r6s
-          - orangepi-3b
-          - orangepi-5
-          - orangepi-5-max
-          - orangepi-5-plus
-          - orangepi-5-pro
-          - orangepi-5b
-          - orangepi-cm5
-          - radxa-cm5-io
-          - radxa-cm5-rpi-cm4-io
-          - radxa-nx5-io
-          - radxa-zero3
-          - roc-rk3588s-pc
-          - rock-5-itx
-          - rock-5a
-          - rock-5b
-          - rock-5b-plus
-          - rock-5c
-          - rock-5d
+          - indiedroid-nova
+          - mixtile-blade3
+          - mixtile-core3588e
+          - lubancat-4
           - turing-rk1
+          - armsom-sige5
+          - armsom-w3
+          - armsom-sige7
+          - armsom-aim7
+          - aio-3588l
         flavor:
           - desktop
           - server
@@ -186,14 +185,14 @@ jobs:
       - name: Checkout rootfs
         uses: actions/download-artifact@v4.1.2
         with:
-            name: ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64-rootfs
-            path: ./build/
+          name: ubuntu-${{ matrix.suite == 'jammy' && '22.04' || matrix.suite == 'noble' && '24.04' }}-preinstalled-${{ matrix.flavor }}-arm64-rootfs
+          path: ./build/
 
       - name: Checkout kernel
         uses: actions/download-artifact@v4.1.2
         with:
-            name: linux-rockchip-${{ matrix.suite == 'jammy' && '5.10' || matrix.suite == 'noble' && '6.1' }}
-            path: ./build/
+          name: linux-rockchip-${{ matrix.suite == 'jammy' && '5.10' || matrix.suite == 'noble' && '6.1' }}
+          path: ./build/
 
       - name: Build
         shell: bash

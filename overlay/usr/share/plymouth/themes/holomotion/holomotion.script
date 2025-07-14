@@ -1,0 +1,64 @@
+# Load the logo image
+logo_image = Image("logo.png");
+logo_sprite = Sprite();
+logo_sprite.SetImage(logo_image);
+
+# Load the spinner image
+spinner_image = Image("spinner.png");
+spinner_sprite = Sprite();
+spinner_sprite.SetImage(spinner_image);
+
+# Get the screen width and height
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+# Get the logo width and height
+logo_width = logo_image.GetWidth();
+logo_height = logo_image.GetHeight();
+
+# Calculate the center position for the logo
+center_x = (screen_width - logo_width) / 2;
+center_y = (screen_height - logo_height) / 2 - 50;
+
+# Set the position of the logo
+logo_sprite.SetPosition(center_x, center_y);
+logo_sprite.SetZ(100);
+
+# Get the spinner width and height
+spinner_width = spinner_image.GetWidth();
+spinner_height = spinner_image.GetHeight();
+
+# Calculate the center position for the spinner, below the logo
+spinner_x = (screen_width - spinner_width) / 2;
+spinner_y = center_y + logo_height + 20;  # 20 pixels below the logo
+
+# Set the position of the spinner
+spinner_sprite.SetPosition(spinner_x, spinner_y);
+spinner_sprite.SetZ(100);
+
+# Initialize the logo opacity and spinner angle
+logo_opacity = 0.0;
+angle = 0.0;
+duration = 5.0;  # Duration of the logo fade-in effect in seconds
+start_time = GetTime();
+end_time = start_time + duration;
+
+# Main loop
+while (true) {
+    current_time = GetTime();
+    if (current_time < end_time) {
+        progress = (current_time - start_time) / duration;
+        logo_opacity = progress;
+    } else {
+        logo_opacity = 1.0;
+    }
+    logo_sprite.SetOpacity(logo_opacity);
+
+    angle = angle + 10.0;  # Rotate by 10 degrees each iteration
+    if (angle >= 360.0) {
+        angle = 0.0;
+    }
+    spinner_sprite.SetRotation(angle);
+
+    Sleep(0.05);  # Adjust sleep duration for smoother animation
+}

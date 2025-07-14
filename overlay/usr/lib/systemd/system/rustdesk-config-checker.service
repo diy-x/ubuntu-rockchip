@@ -1,0 +1,12 @@
+[Unit]
+Description=Check and Update RustDesk Config Service
+After=rustdesk.service
+Requires=rustdesk.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/scripts/rustdesk-config-checker.sh
+TimeoutStartSec=10
+
+[Install]
+WantedBy=multi-user.target

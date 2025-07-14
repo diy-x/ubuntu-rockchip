@@ -1,0 +1,11 @@
+[Unit]
+Description=Apply GNOME settings once at boot
+After=dbus.service
+Requires=dbus.service
+
+[Service]
+ExecStart=/usr/lib/scripts/firstboot-options-apply.sh
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

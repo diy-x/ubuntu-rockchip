@@ -1,0 +1,14 @@
+[Unit]
+Description=Forwarder Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/forwarder
+Restart=on-failure
+RestartSec=15
+StartLimitInterval=120
+StartLimitBurst=10
+
+[Install]
+WantedBy=multi-user.target
