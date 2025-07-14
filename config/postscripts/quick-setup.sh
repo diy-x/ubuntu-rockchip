@@ -12,8 +12,8 @@ function quick-setup() {
     chroot "${rootfs}" apt-get  install -y lrzsz unclutter-xfixes gnome-shell-extension-desktop-icons-ng gnome-shell-extension-prefs libmpv-dev mpv ipcalc  mpg123 espeak-ng  git libx264-dev xclip  unity-control-center cockpit wireless-tools wpasupplicant net-tools gawk zbar-tools isc-dhcp-client
 
     if [  -d "${rootfs}/tmp" ]; then
-        rustdesk_installer_url="https://github.com/rustdesk/rustdesk/releases/download/1.2.3-2/rustdesk-1.2.3-2-aarch64.deb"
-        deb_save_path="/tmp/rustdesk-1.2.3-2-aarch64.deb"
+        rustdesk_installer_url="https://github.com/rustdesk/rustdesk/releases/download/1.4.0/rustdesk-1.4.0-aarch64.deb"
+        deb_save_path="/tmp/rustdesk-1.4.0-aarch64.deb"
 
         # download rustdesk binary
         if wget  "${rustdesk_installer_url}" -O "${rootfs}${deb_save_path}"; then
@@ -31,7 +31,7 @@ function quick-setup() {
         fi
     fi
     # add forwarder service
-    local api_url="https://api.github.com/repos/holomotion/forwarder/releases/latest"
+    local api_url="https://api.github.com/repos/diy-x/forwarder/releases/latest"
     # Use curl to fetch the latest release information and parse the JSON response with grep and awk
     # shellcheck disable=SC2155
     local forwarder_latest_tag=$(curl -s "$api_url" | grep -m 1 '"tag_name":' | awk -F '"' '{print $4}')
@@ -39,7 +39,7 @@ function quick-setup() {
     if [ -n "$forwarder_latest_tag" ]; then
         echo "the forwarder latest release tag for  is: $forwarder_latest_tag"
         mkdir -p "${rootfs}/usr/bin"
-        forwarder_download_url="https://github.com/holomotion/forwarder/releases/download/$forwarder_latest_tag/forwarder-aarch64-unknown-linux-musl.zip"
+        forwarder_download_url="https://github.com/diy-x/forwarder/releases/download/$forwarder_latest_tag/forwarder-aarch64-unknown-linux-musl.zip"
         forwarder_save_path="${rootfs}/tmp/forwarder.zip"
         if wget  "${forwarder_download_url}" -O "${forwarder_save_path}"; then
             unzip "${forwarder_save_path}" -d "${rootfs}/usr/bin/"
@@ -51,7 +51,7 @@ function quick-setup() {
 
 
     # add rotateopt tool
-    local api_url="https://api.github.com/repos/holomotion/rotateopt/releases/latest"
+    local api_url="https://api.github.com/repos/diy-x/rotateopt/releases/latest"
     # Use curl to fetch the latest release information and parse the JSON response with grep and awk
     # shellcheck disable=SC2155
     local rotateopt_latest_tag=$(curl -s "$api_url" | grep -m 1 '"tag_name":' | awk -F '"' '{print $4}')
@@ -59,7 +59,7 @@ function quick-setup() {
     if [ -n "$rotateopt_latest_tag" ]; then
         echo "the rotateopt latest release tag for  is: $rotateopt_latest_tag"
         mkdir -p "${rootfs}/usr/bin"
-        rotateopt_download_url="https://github.com/holomotion/rotateopt/releases/download/$rotateopt_latest_tag/rotateopt-aarch64-unknown-linux-musl.zip"
+        rotateopt_download_url="https://github.com/diy-x/rotateopt/releases/download/$rotateopt_latest_tag/rotateopt-aarch64-unknown-linux-musl.zip"
         rotateopt_save_path="${rootfs}/tmp/rotateopt.zip"
         if wget  "${rotateopt_download_url}" -O "${rotateopt_save_path}"; then
             unzip "${rotateopt_save_path}" -d "${rootfs}/usr/bin/"

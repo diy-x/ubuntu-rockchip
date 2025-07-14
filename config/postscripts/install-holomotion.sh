@@ -6,7 +6,7 @@ function install_holomotion() {
     local overlay="$2"  # overlay 参数保留，即使在这个脚本中可能未使用
     echo "pre-install holomotion with rootfs:${rootfs} overlay:${overlay}"
 
-    installerRepo="https://e.coding.net/g-hvab4800/holomotion_update/HoloMotion_Update.git"
+    installerRepo="https://cnb.cool/ty2025/nts/Holomotion_Update/HoloMotion_Update.git"
     VERSION_REGEX_RELEASE="^[0-9]+\.[0-9]+\.[0-9]+-[0-9]{8}$"
 
     install_dir="/home/holomotion/local/bin" # 用户空间内的安装目录
