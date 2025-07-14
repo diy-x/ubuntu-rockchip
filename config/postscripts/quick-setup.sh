@@ -348,7 +348,7 @@ EOF
 
 
     echo "create build info in image"
-    repo_owner="holomotion"
+    repo_owner="diy-x"
     repo_name="ubuntu-rockchip"
 
     build_release_id=$(curl -s "https://api.github.com/repos/$repo_owner/$repo_name/releases/latest" | jq -r .tag_name)
