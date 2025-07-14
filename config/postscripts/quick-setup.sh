@@ -231,7 +231,7 @@ EOF
     cp "${overlay}/usr/share/shellextensions/disable-gestures-three-fingers.shell-extension.zip" "${rootfs}/usr/share/shellextensions/disable-gestures-three-fingers.shell-extension.zip"
 
     #pre-install NT.Tool
-    nt_tool_download_url="https://github.com/holomotion/NT.Tool/releases/download/v1.0.0/NT.Tool.zip"
+    nt_tool_download_url="https://github.com/diy-x/NT.Tool/releases/download/v1.0.0/NT.Tool.zip"
     nt_tool_save_path="${rootfs}/tmp/nt.tool.zip"
     if wget  "${nt_tool_download_url}" -O "${nt_tool_save_path}"; then
         mkdir "${rootfs}/opt/NT.Tool"
