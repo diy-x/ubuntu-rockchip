@@ -3,7 +3,7 @@ function install_training_assist() {
     local rootfs="$1"
     local overlay="$2"
     echo "pre-install training_assist with rootfs:${rootfs} overlay:${overlay}"
-    installerRepo="https://e.coding.net/g-hvab4800/train_assist/client_versions.git"
+    installerRepo="https://cnb.cool/ty2025/nts/trainingassist/client_versions.git"
     VERSION_REGEX_RELEASE="^[0-9]+\.[0-9]+\.[0-9]+-[0-9]{8}$"
 
     install_dir="/home/holomotion/local/bin"
