@@ -1,11 +1,14 @@
 #!/bin/env bash
+
 RUSTDESK_PASSWORD="Holo#Motion"
 RUSTDESK_CONFIG_DIR="/root/.config/rustdesk"
 RUSTDESK_CONFIG_FILE="${RUSTDESK_CONFIG_DIR}/RustDesk2.toml"
+
 EXPECTED_CONTENT=$(cat <<EOF
 rendezvous_server = 'rustdesk.ntsports.tech:21116'
 nat_type = 1
 serial = 0
+
 [options]
 access-mode = 'full'
 direct-server = 'Y'
@@ -22,7 +25,8 @@ contains_expected_content() {
     local content="$1"
     local file="$2"
     while IFS= read -r line; do
-        if ! grep -Fxq "$line" "$file"; then
+        [[ -z "$line" ]] && continue
+        if ! grep -Fxq "$line" "$file" 2>/dev/null; then
             return 1
         fi
     done <<< "$content"
@@ -32,19 +36,18 @@ contains_expected_content() {
 # Function to wait for RustDesk service to be ready
 wait_for_rustdesk() {
     echo "Waiting for RustDesk service to start..."
-    local max_attempts=10
+    local max_attempts=15
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        # Check if service is running
         if systemctl is-active --quiet rustdesk; then
-            echo "RustDesk service started, waiting 2 seconds to ensure readiness..."
-            sleep 2
+            echo "RustDesk service started, waiting 5 seconds to ensure full readiness..."
+            sleep 5
             return 0
         fi
         
-        echo "Attempt $attempt/$max_attempts: RustDesk service not ready, waiting 2 seconds..."
-        sleep 2
+        echo "Attempt $attempt/$max_attempts: RustDesk service not ready, waiting 3 seconds..."
+        sleep 3
         ((attempt++))
     done
     
@@ -55,30 +58,43 @@ wait_for_rustdesk() {
 # Create config directory
 mkdir -p "$RUSTDESK_CONFIG_DIR"
 
-# Fix logic: check if file doesn't exist or content doesn't match
+# Check if update is needed
 if [ ! -f "$RUSTDESK_CONFIG_FILE" ] || ! contains_expected_content "$EXPECTED_CONTENT" "$RUSTDESK_CONFIG_FILE"; then
     echo "Updating RustDesk configuration..."
     
     # Write config file
     echo "$EXPECTED_CONTENT" > "$RUSTDESK_CONFIG_FILE"
+    chmod 600 "$RUSTDESK_CONFIG_FILE"
     
-    # Restart service and wait for readiness
-    echo "Restarting RustDesk service..."
-    systemctl restart rustdesk
+    # Stop service completely
+    echo "Stopping RustDesk service..."
+    systemctl stop rustdesk 2>/dev/null || true
+    sleep 2
+    pkill -f rustdesk 2>/dev/null || true
+    sleep 1
     
-    # Wait for service to fully start
+    # Start service
+    echo "Starting RustDesk service..."
+    systemctl start rustdesk
+    
+    # Wait for service to be fully ready
     if wait_for_rustdesk; then
         echo "Setting RustDesk password..."
-        # Try to set password, capture error output
-        if rustdesk --password "$RUSTDESK_PASSWORD" 2>&1; then
-            echo "✓ Password set successfully via command line"
-        else
-            echo "⚠ Command line password setting failed, but password is set in config file and should still work"
-        fi
+        # Try multiple times with delay
+        for i in {1..5}; do
+            if rustdesk --password "$RUSTDESK_PASSWORD" 2>/dev/null; then
+                echo "✓ Password set successfully"
+                break
+            else
+                echo "Attempt $i failed, waiting 3 seconds..."
+                sleep 3
+            fi
+        done
         
-        # Restart service again to ensure config takes effect
-        echo "Restarting service to ensure configuration takes effect..."
+        # Final restart to ensure config takes effect
+        echo "Final restart to ensure configuration takes effect..."
         systemctl restart rustdesk
+        sleep 3
     else
         echo "Warning: Service startup abnormal, skipping password setting"
     fi
