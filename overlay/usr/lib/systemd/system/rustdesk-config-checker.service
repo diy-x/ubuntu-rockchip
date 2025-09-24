@@ -1,12 +1,17 @@
 [Unit]
 Description=Check and Update RustDesk Config Service
-After=rustdesk.service
+After=rustdesk.service network-online.target
+Wants=network-online.target
 Requires=rustdesk.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/lib/scripts/rustdesk-config-checker.sh
-TimeoutStartSec=10
+TimeoutStartSec=60
+Restart=no
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
